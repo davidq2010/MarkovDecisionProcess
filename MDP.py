@@ -22,6 +22,14 @@ util_graph[3][1] = r_graph[3][1] = 100
 terminals = set([(1, 0), (2, 0), (3, 1)])
 blocked = set([(0, 0), (3, 0)])
 
+unit_dirs = [(-1, 0), (0, 1), (1, 0), (0, -1)] # N E S W
+
+class Action(IntEnum):
+    NORTH = 0
+    EAST = 1
+    SOUTH = 2
+    WEST = 3
+
 def print_shit(graph):
     space = 8
     line_width = space * cols + cols+1
@@ -52,22 +60,89 @@ def max_of_neighbors(util_graph, coord):
     best_dir = []
     for unit_dir in unit_dirs:
         new_coord = (coord[0] + unit_dir[0], coord[1] + unit_dir[1])
-        if in_bounds(new_coord):
+        if in_bounds(new_coord) and new_coord not in blocked:
             new_coords.append(new_coord)
             best_dir.append(unit_dir)
     max_val = max([util_graph[coord[0]][coord[1]] for coord in new_coords])
     filtered_coords = []
     for i in range(len(new_coords)):
-        if new_coords[i] = max_val:
+        if max_val - 0.0001 <= util_graph[new_coords[i][0]][new_coords[i][1]] <= max_val + 0.0001:
             filtered_coords.append(best_dir[i])
     return set(filtered_coords)
 
-policy_dict = {unit_dirs[Action.NORTH]: "^",
-               unit_dirs[Action.EAST]: ">",
-               unit_dirs[Action.SOUTH]: "v",
-               unit_dirs[Action.WEST]: "<"}
+policy_dict = {Action.NORTH: "^",
+               Action.EAST: ">",
+               Action.SOUTH: "v",
+               Action.WEST: "<"}
 
 def print_policy_graph(util_graph):
+    #or i in range(rows * 3 + rows + 1)
+    space = 8
+    line_width = space * cols + cols+1
+    output = []
+    output.append("{:{fill}<{width}}".format('', fill='-', width=line_width))
+    for i in range(rows):
+        for j in range(cols):
+            if (i, j) in blocked:
+                for cell_row in range(3):
+                    line = "{:{width}}".format('', width=space) + "|"
+                    if j == 0:
+                        output.append("|" + line)
+                    else:
+                        output[cell_row-3] += line
+            elif (i, j) in terminals:
+                line = "{:{width}}".format('', width=space) + "|"
+                if j == 0:
+                    output.append("|" + line)
+                else:
+                    output[-3] += line
+                line = "{:^{width}.3f}".format(util_graph[i][j], width=space) + "|"
+                if j == 0:
+                    output.append("|" + line)
+                else:
+                    output[-2] += line
+                line = "{:{width}}".format('', width=space) + "|"
+                if j == 0:
+                    output.append("|" + line)
+                else:
+                    output[-1] += line
+            else:
+                best_dirs = max_of_neighbors(util_graph, (i, j))
+                line = "{:{width}}".format('', width=space)
+                if unit_dirs[Action.NORTH] in best_dirs: 
+                    line = "{:^{width}}".format(policy_dict[Action.NORTH], width=space)
+                line += "|"
+                if j == 0:
+                    output.append("|" + line)
+                else:
+                    output[-3] += line
+                line = "{:{width}}".format('', width=space-1)
+                if unit_dirs[Action.WEST] in best_dirs:
+                    line = "{:<{width}}".format(policy_dict[Action.WEST], width=space-1)
+                if unit_dirs[Action.EAST] in best_dirs:
+                    line += policy_dict[Action.EAST]
+                else:
+                    line += " "
+                line += "|"
+                if j == 0:
+                    output.append("|" + line)
+                else:
+                    output[-2] += line
+                line = "{:{width}}".format('', width=space)
+                if unit_dirs[Action.SOUTH] in best_dirs: 
+                    line = "{:^{width}}".format(policy_dict[Action.SOUTH], width=space)
+                line += "|"
+                if j == 0:
+                    output.append("|" + line)
+                else:
+                    output[-1] += line
+        output.append("{:{fill}<{width}}".format('', fill='-', width=line_width))
+    for line in output:
+        print(line)
+
+
+
+"""   
     space = 8
     line_width = space * cols + cols+1
     output = []
@@ -79,7 +154,7 @@ def print_policy_graph(util_graph):
             for x in range()
             best_dirs = max_of_neighbors(util_graph, (i, j))
             if graph[i][j] == BIG_NEG:
-                
+
             if unit_dirs[Action.NORTH] in best_dirs:
                 line += ("{:{width}}".format('', width=space) if graph[i][j] == BIG_NEG 
                 else "{:^{width}.3f}".format(graph[i][j], width=space))
@@ -100,20 +175,12 @@ def print_policy_graph(util_graph):
                 new_line = output[i][0:start] + '=' * (space) + output[i][end:]
                 output[i] = new_line
     print(''.join(output))
-
+"""
 
 discount = 1
 
 cell_class = {"land": set([(0, 1), (0, 2), (3, 2)]),
               "water": set([(1, 1), (1, 2), (2, 1), (2, 2)])}
-
-unit_dirs = [(-1, 0), (0, 1), (1, 0), (0, -1)] # N E S W
-
-class Action(IntEnum):
-    NORTH = 0
-    EAST = 1
-    SOUTH = 2
-    WEST = 3
 
 def compute_policy_probs(coord, action):
     direction = unit_dirs[action]
@@ -162,5 +229,4 @@ while(count < 10):
     count += 1
 
 print_shit(util_graph)
-
-print(count)
+print_policy_graph(util_graph)
