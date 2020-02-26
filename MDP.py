@@ -1,28 +1,12 @@
 from enum import IntEnum
 from functools import reduce
+import sys
 
 BIG_NEG = -100000000000000
 
 # Build graph
 rows = 4
 cols = 3
-initial_reward = -150
-r_graph = [[initial_reward for j in range(cols)] for i in range(rows)]
-util_graph = [[0 for j in range(cols)] for i in range(rows)]
-
-# Blank spots; not necessary, just in case I think (bc they're already in blocked)
-util_graph[0][0] = util_graph[3][0] = r_graph[0][0] = r_graph[3][0] = BIG_NEG 
-
-# Terminals
-util_graph[1][0] = r_graph[1][0] = -100
-util_graph[2][0] = r_graph[2][0] = -100
-
-util_graph[3][1] = r_graph[3][1] = 100
-
-terminals = set([(1, 0), (2, 0), (3, 1)])
-blocked = set([(0, 0), (3, 0)])
-
-unit_dirs = [(-1, 0), (0, 1), (1, 0), (0, -1)] # N E S W
 
 class Action(IntEnum):
     NORTH = 0
@@ -30,7 +14,7 @@ class Action(IntEnum):
     SOUTH = 2
     WEST = 3
 
-def print_shit(graph):
+def print_util_graph(graph):
     space = 8
     line_width = space * cols + cols+1
     output = []
@@ -38,12 +22,11 @@ def print_shit(graph):
     for i in range(rows):
         line = '|'
         for j in range(cols):
-            line += ("{:{width}}".format('', width=space) if graph[i][j] == BIG_NEG 
+            line += ("{:{width}}".format('', width=space) if graph[i][j] == BIG_NEG
                 else "{:^{width}.3f}".format(graph[i][j], width=space))
             line += "|"
         output.append(line + "\n")
         output.append("{:{fill}<{width}}".format('', fill='-', width=line_width) + "\n")
-
 
     for i in range(len(output)):
         for j in range(cols):
@@ -53,7 +36,6 @@ def print_shit(graph):
                 new_line = output[i][0:start] + '=' * (space) + output[i][end:]
                 output[i] = new_line
     print(''.join(output))
-
 
 def max_of_neighbors(util_graph, coord):
     new_coords = []
@@ -109,7 +91,7 @@ def print_policy_graph(util_graph):
             else:
                 best_dirs = max_of_neighbors(util_graph, (i, j))
                 line = "{:{width}}".format('', width=space)
-                if unit_dirs[Action.NORTH] in best_dirs: 
+                if unit_dirs[Action.NORTH] in best_dirs:
                     line = "{:^{width}}".format(policy_dict[Action.NORTH], width=space)
                 line += "|"
                 if j == 0:
@@ -129,7 +111,7 @@ def print_policy_graph(util_graph):
                 else:
                     output[-2] += line
                 line = "{:{width}}".format('', width=space)
-                if unit_dirs[Action.SOUTH] in best_dirs: 
+                if unit_dirs[Action.SOUTH] in best_dirs:
                     line = "{:^{width}}".format(policy_dict[Action.SOUTH], width=space)
                 line += "|"
                 if j == 0:
@@ -147,11 +129,8 @@ def print_policy_graph(util_graph):
                 output[i] = new_line
     print('\n'.join(output))
 
-
-discount = 1
-
-cell_class = {"land": set([(0, 1), (0, 2), (3, 2)]),
-              "water": set([(1, 1), (1, 2), (2, 1), (2, 2)])}
+def in_bounds(coord):
+    return (0 <= coord[0] < rows) and (0 <= coord[1] < cols)
 
 def compute_policy_probs(coord, action):
     direction = unit_dirs[action]
@@ -174,30 +153,45 @@ def util_of_action(coord, action):
         util += policy_prob[0] * util_graph[policy_prob[1][0]][policy_prob[1][1]]
     return util
 
-def in_bounds(coord):
-    return (0 <= coord[0] < rows) and (0 <= coord[1] < cols)
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print("Usage: python3 MDP.py <initial_reward>")
+        exit(1)
 
-stop = False
-count = 0
-while(count < 10):
-#while (not stop):
-    # Loop over states
-    for i in range(rows):
-        for j in range(cols):
-            if (i, j) not in terminals and (i, j) not in blocked:
-                max_util = max([util_of_action((i, j), action) for action in range(len(unit_dirs))])
-                util_of_coord = r_graph[i][j] + discount * max_util
+    initial_reward = int(sys.argv[1])
+    print(initial_reward)
 
-                """
-                if abs(util_graph[i][j] - u) < 0.00000000000000000001:
-                    print("Coord: {}, {}".format(i, j))
-                    print("Old u: {}".format(util_graph[i][j]))
-                    print("New u: {}".format(u))
-                    stop = True
-                """
+    r_graph = [[initial_reward for j in range(cols)] for i in range(rows)]
+    util_graph = [[0 for j in range(cols)] for i in range(rows)]
 
-                util_graph[i][j] = util_of_coord
-    count += 1
+    # Blank spots; not necessary, just in case I think (bc they're already in blocked)
+    util_graph[0][0] = util_graph[3][0] = r_graph[0][0] = r_graph[3][0] = BIG_NEG
 
-print_shit(util_graph)
-print_policy_graph(util_graph)
+    # Terminals
+    util_graph[1][0] = r_graph[1][0] = -100
+    util_graph[2][0] = r_graph[2][0] = -100
+
+    util_graph[3][1] = r_graph[3][1] = 100
+
+    terminals = set([(1, 0), (2, 0), (3, 1)])
+    blocked = set([(0, 0), (3, 0)])
+
+    unit_dirs = [(-1, 0), (0, 1), (1, 0), (0, -1)] # N E S W
+
+    cell_class = {"land": set([(0, 1), (0, 2), (3, 2)]),
+                  "water": set([(1, 1), (1, 2), (2, 1), (2, 2)])}
+
+    discount = 1
+    count = 0
+    while(count < 10):
+        for i in range(rows):
+            for j in range(cols):
+                if (i, j) not in terminals and (i, j) not in blocked:
+                    max_util = max([util_of_action((i, j), action)
+                        for action in range(len(unit_dirs))])
+                    util_of_coord = r_graph[i][j] + discount * max_util
+                    util_graph[i][j] = util_of_coord
+        count += 1
+
+    print_util_graph(util_graph)
+    print_policy_graph(util_graph)
