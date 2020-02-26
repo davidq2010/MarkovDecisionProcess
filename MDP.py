@@ -137,45 +137,16 @@ def print_policy_graph(util_graph):
                 else:
                     output[-1] += line
         output.append("{:{fill}<{width}}".format('', fill='-', width=line_width))
-    for line in output:
-        print(line)
-
-
-
-"""   
-    space = 8
-    line_width = space * cols + cols+1
-    output = []
-    output.append("{:{fill}<{width}}".format('', fill='-', width=line_width) + "\n")
-    for i in range(rows):
-        line = '|'
-        for j in range(cols):
-            # Compute max of neighbors
-            for x in range()
-            best_dirs = max_of_neighbors(util_graph, (i, j))
-            if graph[i][j] == BIG_NEG:
-
-            if unit_dirs[Action.NORTH] in best_dirs:
-                line += ("{:{width}}".format('', width=space) if graph[i][j] == BIG_NEG 
-                else "{:^{width}.3f}".format(graph[i][j], width=space))
-
-
-            line += ("{:{width}}".format('', width=space) if graph[i][j] == BIG_NEG 
-                else "{:^{width}.3f}".format(graph[i][j], width=space))
-            line += "|"
-        output.append(line + "\n")
-        output.append("{:{fill}<{width}}".format('', fill='-', width=line_width) + "\n")
-
 
     for i in range(len(output)):
         for j in range(cols):
-            if i % 2 == 0 and ((i/2, j) in terminals or ((i-2)/2, j) in terminals):
+            if i % 4 == 0 and ((i/4, j) in terminals or ((i-4)/4, j) in terminals):
                 start = j*(space+1) + 1
                 end = start + space
                 new_line = output[i][0:start] + '=' * (space) + output[i][end:]
                 output[i] = new_line
-    print(''.join(output))
-"""
+    print('\n'.join(output))
+
 
 discount = 1
 
